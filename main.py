@@ -11,6 +11,7 @@ especialNoTerminalUsed = 0
 
 def makeAutomaton(model):
 	iteration = 0
+	global especialNoTerminalUsed
 	for line in model:
 		line = line.replace(" ", "")
 

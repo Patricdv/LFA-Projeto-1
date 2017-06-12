@@ -1,4 +1,4 @@
-<S> ::= a | a<B> | a<C> | b<B>;
-<A> ::= a<A> | b<B> | c <B>;
+<S> ::= se<B> | a<B> | a<C> | b<B>;
+<A> ::= a<A> | b<B> | entao<B>;
 <B> ::= &;
-<C> ::= b<A>;
+<C> ::= senao <A>;
