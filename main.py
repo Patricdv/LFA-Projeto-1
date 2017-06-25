@@ -1,11 +1,18 @@
 class AutomatonLine(object):
-	def __init__(self, noTerminalName = "", productions = {}):
+	def __init__(self, noTerminalName = "", composition = [], productions = {}):
 		self.noTerminalName = noTerminalName
+		self.composition = composition
 		self.productions = productions
+
+class determinizedAutomatonLines(object):
+	def __init__(self, noTerminalName = "", composition = []):
+		self.noTerminalName = noTerminalName
+		self.composition = composition
 
 noTerminals = []
 terminals = []
 automaton = []
+determinizedAutomaton = []
 finals = []
 especialNoTerminalUsed = 0
 
@@ -19,11 +26,12 @@ def makeAutomaton(model):
 			print 'error on no terminal declaration'
 			return 0
 
-		automaton.append(AutomatonLine('', {}))
+		automaton.append(AutomatonLine('', [], {}))
 
 		actualNoTerminal = line[1]
 		noTerminals.append(actualNoTerminal)
 		automaton[iteration].noTerminalName = actualNoTerminal
+		automaton[iteration].composition.append(actualNoTerminal)
 
 		if line[3] != ':' or line[4] != ':' or line[5] != '=':
 			print 'error on atribuition declaration'
@@ -77,6 +85,49 @@ def makeAutomaton(model):
 
 		iteration += 1
 
+def agroupNoTerminals(AutomatonLines, determinizedAutomaton):
+	for index in determinizedAutomaton:
+		if index.noTerminalName in noTerminals:
+			continue
+
+		noTerminals.append(index.noTerminalName)
+		automaton.append(AutomatonLine(index.noTerminalName, index.composition, {}))
+		automatonPosition = len(automaton) - 1
+
+		for part in index.composition:
+			if part in finals:
+				finals.append(index.noTerminalName)
+				break
+
+		for element in automaton:
+			if element.noTerminalName in index.composition:
+				for production in element.productions.keys():
+					if production not in automaton[automatonPosition].productions:
+						automaton[automatonPosition].productions[production] = []
+
+					for value in element.productions[production]:
+						if value not in automaton[automatonPosition].productions[production]:
+							automaton[automatonPosition].productions[production].append(value)
+
+def makeDeterminization(AutomatonLines):
+	indeterminizedTerminals = 0
+
+	for automatonLine in AutomatonLines:
+		for terminal in automatonLine.productions:
+			if len(automatonLine.productions[terminal]) > 1:
+				indeterminizedTerminals = 1
+				newNoTerminal = '[' + ''.join(sorted(automatonLine.productions[terminal])) + ']'
+				determinizedAutomaton.append(determinizedAutomatonLines(newNoTerminal, automatonLine.productions[terminal]))
+				automatonLine.productions[terminal] = [newNoTerminal]
+
+	if indeterminizedTerminals == 1:
+		agroupNoTerminals(AutomatonLines, determinizedAutomaton)
+		makeDeterminization(AutomatonLines)
+
+def removeUnused(AutomatonLines):
+	print "removing"
+
+
 ## Main
 file = open("base", "r");
 model = file.readlines();
@@ -86,6 +137,10 @@ file.close();
 ## Making Basic CSV:
 finiteAutomaton = open("finite-automaton.csv", "wb")
 finiteAutomaton.write(" ")
+
+## Making Determinized CSV:
+determinizedAutomatonFile = open("determinized-automaton.csv", "wb")
+determinizedAutomatonFile.write(" ")
 
 # Coloca as colunas de terminais no topo
 for terminal in terminals:
@@ -128,3 +183,28 @@ finiteAutomaton.write("X")
 for terminal in terminals:
 	finiteAutomaton.write("; X")
 finiteAutomaton.write("\n")
+
+makeDeterminization(automaton)
+removeUnused(automaton)
+
+for automatonLine in automaton:
+	# Testa se o nao-terminal eh um estado final
+	if (automatonLine.noTerminalName in finals):
+		determinizedAutomatonFile.write("*")
+
+	# Escreve o nao-terminal
+	determinizedAutomatonFile.write(str(automatonLine.noTerminalName))
+
+	# Produz as colunas de producoes dos terminais
+	for terminal in terminals:
+		if terminal not in automatonLine.productions.keys():
+			determinizedAutomatonFile.write("; X")
+		else:
+			determinizedAutomatonFile.write("; ")
+			count = 0
+			for target in automatonLine.productions[terminal]:
+				count += 1
+				if count > 1 :
+					determinizedAutomatonFile.write(', ')
+				determinizedAutomatonFile.write(str(target))
+	determinizedAutomatonFile.write("\n")

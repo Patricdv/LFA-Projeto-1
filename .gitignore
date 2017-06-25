@@ -1,4 +1,1 @@
-.vagrant/
-VagrantFile
-provision.sh
 *.csv
