@@ -9,12 +9,25 @@ class determinizedAutomatonLines(object):
 		self.noTerminalName = noTerminalName
 		self.composition = composition
 
+class automatonReach(object):
+	def __init__(self, noTerminalName = "", reachs = [], final = 0):
+		self.noTerminalName = noTerminalName
+		self.reachs = reachs
+		self.final = 0
+
 noTerminals = []
 terminals = []
 automaton = []
-determinizedAutomaton = []
 finals = []
 especialNoTerminalUsed = 0
+
+determinizedAutomaton = []
+
+reachableNoTerminals = []
+alreadyViewed = []
+
+livableNoTerminals = []
+noTerminalsReachs = []
 
 def makeAutomaton(model):
 	iteration = 0
@@ -124,9 +137,68 @@ def makeDeterminization(AutomatonLines):
 		agroupNoTerminals(AutomatonLines, determinizedAutomaton)
 		makeDeterminization(AutomatonLines)
 
-def removeUnused(AutomatonLines):
-	print "removing"
+def reachNoTerminals(AutomatonLines, reachableNoTerminals, alreadyViewed):
+	changes = 0
 
+	for automatonLine in AutomatonLines:
+		if automatonLine.noTerminalName not in alreadyViewed:
+			if automatonLine.noTerminalName in reachableNoTerminals:
+			 	alreadyViewed.append(automatonLine.noTerminalName)
+
+				for terminal in automatonLine.productions:
+					if automatonLine.productions[terminal][0] not in reachableNoTerminals:
+						reachableNoTerminals.append(automatonLine.productions[terminal][0])
+						changes = 1
+
+	if changes == 1:
+		reachNoTerminals(AutomatonLines, reachableNoTerminals, alreadyViewed)
+
+def removeUnusedStates(AutomatonLines):
+	firstState = AutomatonLines[0] # Eh considerado que o primeiro estado do arquivo base e o primeiro estado
+	reachableNoTerminals.append(firstState.noTerminalName)
+	alreadyViewed.append(firstState.noTerminalName)
+
+	for terminal in firstState.productions:
+		if firstState.productions[terminal][0] not in reachableNoTerminals:
+			reachableNoTerminals.append(firstState.productions[terminal][0])
+
+	reachNoTerminals(AutomatonLines, reachableNoTerminals, alreadyViewed)
+
+	for automatonLine in AutomatonLines[:]:
+		if automatonLine.noTerminalName not in reachableNoTerminals:
+			AutomatonLines.remove(automatonLine)
+
+def findEndStates(AutomatonLines, noTerminalsReachs, livableNoTerminals):
+	changes = 0
+
+	for noTerminal in noTerminalsReachs:
+		if noTerminal.final == 0:
+			for reach in noTerminal.reachs:
+				if reach in livableNoTerminals:
+					livableNoTerminals.append(noTerminal.noTerminalName)
+					noTerminal.final = 1
+					changes = 1
+					break
+
+	if changes == 1:
+		findEndStates(AutomatonLines, noTerminalsReachs, livableNoTerminals)
+
+def removeDeadStates(AutomatonLines):
+	for automatonLine in AutomatonLines:
+		if automatonLine.noTerminalName not in finals:
+			stateNoTerminals = []
+			for terminal in automatonLine.productions:
+				if automatonLine.productions[terminal][0] not in stateNoTerminals:
+					stateNoTerminals.append(automatonLine.productions[terminal][0])
+			noTerminalsReachs.append(automatonReach(automatonLine.noTerminalName, stateNoTerminals, 0))
+		else:
+			livableNoTerminals.append(automatonLine.noTerminalName)
+
+	findEndStates(AutomatonLines, noTerminalsReachs, livableNoTerminals)
+
+	for automatonLine in AutomatonLines[:]:
+		if automatonLine.noTerminalName not in livableNoTerminals:
+			AutomatonLines.remove(automatonLine)
 
 ## Main
 file = open("base", "r");
@@ -136,11 +208,19 @@ file.close();
 
 ## Making Basic CSV:
 finiteAutomaton = open("finite-automaton.csv", "wb")
-finiteAutomaton.write(" ")
+finiteAutomaton.write("")
 
 ## Making Determinized CSV:
 determinizedAutomatonFile = open("determinized-automaton.csv", "wb")
-determinizedAutomatonFile.write(" ")
+determinizedAutomatonFile.write("")
+
+## Making without useless states CSV:
+withoutUselessStatesAutomatonFile = open("without-useless-states-automaton.csv", "wb")
+withoutUselessStatesAutomatonFile.write("")
+
+## Making without dead states CSV:
+withoutDeadStatesAutomatonFile = open("without-dead-states-automaton.csv", "wb")
+withoutDeadStatesAutomatonFile.write("")
 
 # Coloca as colunas de terminais no topo
 for terminal in terminals:
@@ -185,7 +265,6 @@ for terminal in terminals:
 finiteAutomaton.write("\n")
 
 makeDeterminization(automaton)
-removeUnused(automaton)
 
 for automatonLine in automaton:
 	# Testa se o nao-terminal eh um estado final
@@ -208,3 +287,51 @@ for automatonLine in automaton:
 					determinizedAutomatonFile.write(', ')
 				determinizedAutomatonFile.write(str(target))
 	determinizedAutomatonFile.write("\n")
+
+removeUnusedStates(automaton)
+
+for automatonLine in automaton:
+	# Testa se o nao-terminal eh um estado final
+	if (automatonLine.noTerminalName in finals):
+		withoutUselessStatesAutomatonFile.write("*")
+
+	# Escreve o nao-terminal
+	withoutUselessStatesAutomatonFile.write(str(automatonLine.noTerminalName))
+
+	# Produz as colunas de producoes dos terminais
+	for terminal in terminals:
+		if terminal not in automatonLine.productions.keys():
+			withoutUselessStatesAutomatonFile.write("; X")
+		else:
+			withoutUselessStatesAutomatonFile.write("; ")
+			count = 0
+			for target in automatonLine.productions[terminal]:
+				count += 1
+				if count > 1 :
+					withoutUselessStatesAutomatonFile.write(', ')
+				withoutUselessStatesAutomatonFile.write(str(target))
+	withoutUselessStatesAutomatonFile.write("\n")
+
+removeDeadStates(automaton)
+
+for automatonLine in automaton:
+	# Testa se o nao-terminal eh um estado final
+	if (automatonLine.noTerminalName in finals):
+		withoutDeadStatesAutomatonFile.write("*")
+
+	# Escreve o nao-terminal
+	withoutDeadStatesAutomatonFile.write(str(automatonLine.noTerminalName))
+
+	# Produz as colunas de producoes dos terminais
+	for terminal in terminals:
+		if terminal not in automatonLine.productions.keys():
+			withoutDeadStatesAutomatonFile.write("; X")
+		else:
+			withoutDeadStatesAutomatonFile.write("; ")
+			count = 0
+			for target in automatonLine.productions[terminal]:
+				count += 1
+				if count > 1 :
+					withoutDeadStatesAutomatonFile.write(', ')
+				withoutDeadStatesAutomatonFile.write(str(target))
+	withoutDeadStatesAutomatonFile.write("\n")
