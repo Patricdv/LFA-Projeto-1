@@ -335,3 +335,8 @@ for automatonLine in automaton:
 					withoutDeadStatesAutomatonFile.write(', ')
 				withoutDeadStatesAutomatonFile.write(str(target))
 	withoutDeadStatesAutomatonFile.write("\n")
+
+withoutDeadStatesAutomatonFile.write("X")
+for terminal in terminals:
+	withoutDeadStatesAutomatonFile.write("; X")
+withoutDeadStatesAutomatonFile.write("\n")
