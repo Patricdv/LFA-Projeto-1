@@ -211,7 +211,7 @@ finiteAutomaton = open("finite-automaton.csv", "wb")
 finiteAutomaton.write("")
 
 ## Making Determinized CSV:
-determinizedAutomatonFile = open("determinized-automaton.csv", "wb")
+determinizedAutomatonFile = open("automaton-after-determinization.csv", "wb")
 determinizedAutomatonFile.write("")
 
 ## Making without useless states CSV:
@@ -219,7 +219,7 @@ withoutUselessStatesAutomatonFile = open("without-useless-states-automaton.csv",
 withoutUselessStatesAutomatonFile.write("")
 
 ## Making without dead states CSV:
-withoutDeadStatesAutomatonFile = open("without-dead-states-automaton.csv", "wb")
+withoutDeadStatesAutomatonFile = open("final-determinized-automaton.csv", "wb")
 withoutDeadStatesAutomatonFile.write("")
 
 # Coloca as colunas de terminais no topo
