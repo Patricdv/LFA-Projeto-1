@@ -225,8 +225,15 @@ withoutDeadStatesAutomatonFile.write("")
 # Coloca as colunas de terminais no topo
 for terminal in terminals:
 	finiteAutomaton.write(";" + str(terminal))
+	determinizedAutomatonFile.write(";" + str(terminal))
+	withoutUselessStatesAutomatonFile.write(";" + str(terminal))
+	withoutDeadStatesAutomatonFile.write(";" + str(terminal))
 
 finiteAutomaton.write("\n")
+determinizedAutomatonFile.write("\n")
+withoutUselessStatesAutomatonFile.write("\n")
+withoutDeadStatesAutomatonFile.write("\n")	
+	
 
 # Comeca as linhas do automato
 for automatonLine in automaton:
