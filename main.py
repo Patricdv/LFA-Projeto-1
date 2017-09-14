@@ -124,10 +124,10 @@ def makeTokenTree(argument, localIteration):
 			if position == length:
 				finals.append(tokenCount)
 		else:
-			if automatonNoTerminal not in actualAutomatonLine.productions[letter]:
+			if automatonNoTerminal not in automaton[localIteration].productions[letter]:
 				automaton[localIteration].productions[letter].append(automatonNoTerminal)
 
-			count = 1
+			count = 0
 			for line in automaton:
 				if automatonNoTerminal == line.noTerminalName:
 					localIteration = count
