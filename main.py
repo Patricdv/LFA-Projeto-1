@@ -15,11 +15,6 @@ class automatonReach(object):
 		self.reachs = reachs
 		self.final = 0
 
-class tokensUsed(object):
-	def __init__(self, letter = "", noTerminalName = ""):
-		self.letter = letter;
-		self.noTerminalName = noTerminalName;
-
 noTerminals = []
 terminals = []
 automaton = []
@@ -28,7 +23,7 @@ especialNoTerminalUsed = 0
 determinizedAutomaton = []
 
 tokens = []
-tokenCount = 0
+statesCount = 0
 
 reachableNoTerminals = []
 alreadyViewed = []
@@ -39,7 +34,12 @@ noTerminalsReachs = []
 def makeAutomaton(model):
 	global especialNoTerminalUsed
 	for line in model:
-		line = line.replace(" ", "").replace("\r", "").replace("\n", "").split("::=")
+		line = line.replace(" ", "").replace("\r", "").replace("\n", "")
+		if "::=" not in line:
+			tokens.append(line)
+			continue
+
+		line = line.split("::=")
 
 		lineAutomaton = line[0]
 		lineArguments = line[1].split("|")
@@ -61,40 +61,35 @@ def makeAutomaton(model):
 				finals.append(actualNoTerminal)
 
 			else:
-				if ((len(argument) == 1) or ('<' in argument and '>' in argument)):
-					if len(argument) == 1:
-						actualTerminal = argument
-						production = 0
-						especialNoTerminalUsed += 1
+				if len(argument) == 1:
+					actualTerminal = argument
+					production = '0'
+					if '0' not in noTerminals:
+						noTerminals.append('0')
+						finals.append('0')
+						automaton.append(AutomatonLine('0', [], {}))
 
-					if '<' in argument and '>' in argument:
-						argument = argument.replace(">", "").split("<")
-						actualTerminal = argument[0]
-						production = argument[1]
+				if '<' in argument and '>' in argument:
+					argument = argument.replace(">", "").split("<")
+					actualTerminal = argument[0]
+					production = argument[1]
 
-					if actualTerminal not in terminals:
-						terminals.append(actualTerminal)
+				if actualTerminal not in terminals:
+					terminals.append(actualTerminal)
 
-					if actualTerminal not in automaton[iteration].productions:
-						automaton[iteration].productions[actualTerminal] = []
+				if actualTerminal not in automaton[iteration].productions:
+					automaton[iteration].productions[actualTerminal] = []
 
-					automaton[iteration].productions[actualTerminal].append(production)
-
-				else:
-					# Is here that build tokens porra!
-					makeTokenTree(argument, iteration)
-
-		iteration += 1
+				automaton[iteration].productions[actualTerminal].append(production)
 
 def makeTokenTree(argument, localIteration):
 	position = 0
 	length = len(argument)
-	global tokenCount
+	global statesCount
 
 	for letter in argument:
 		position += 1
-		createToken = 0
-		automatonNoTerminal = 0
+		statesCount += 1
 
 		if letter not in terminals:
 			terminals.append(letter)
@@ -102,36 +97,13 @@ def makeTokenTree(argument, localIteration):
 		if letter not in automaton[localIteration].productions:
 			automaton[localIteration].productions[letter] = []
 
-		if not tokens:
-			createToken = 1
-		else:
-			for token in tokens:
-				createToken = 1
-				if letter == token.letter:
-					createToken = 0
-					automatonNoTerminal = token.noTerminalName
-					break
+		noTerminals.append(str(statesCount))
+		automaton[localIteration].productions[letter].append(str(statesCount))
+		if position == length:
+			finals.append(str(statesCount))
 
-		if createToken == 1:
-			tokenCount += 1
-
-			tokens.append(tokensUsed(letter, tokenCount))
-			noTerminals.append(tokenCount)
-			automaton[localIteration].productions[letter].append(tokenCount)
-
-			automaton.append(AutomatonLine(tokenCount, [], {}))
-			localIteration = len(automaton) - 1
-			if position == length:
-				finals.append(tokenCount)
-		else:
-			if automatonNoTerminal not in automaton[localIteration].productions[letter]:
-				automaton[localIteration].productions[letter].append(automatonNoTerminal)
-
-			count = 0
-			for line in automaton:
-				if automatonNoTerminal == line.noTerminalName:
-					localIteration = count
-				count += 1
+		automaton.append(AutomatonLine(str(statesCount), [], {}))
+		localIteration = len(automaton) - 1
 
 def agroupNoTerminals(AutomatonLines, determinizedAutomaton):
 	for index in determinizedAutomaton:
@@ -241,6 +213,7 @@ def makeAutomatonCsvFile(fileName, automaton):
 	automatonFile.write("")
 
 	# Coloca as colunas de terminais no topo
+	automatonFile.write("NT")
 	for terminal in terminals:
 		automatonFile.write(";" + str(terminal))
 
@@ -268,13 +241,6 @@ def makeAutomatonCsvFile(fileName, automaton):
 					automatonFile.write(str(target))
 		automatonFile.write("\n")
 
-	# Caso o nao-terminal especial de terminal sozinho tenha sido usado, ele eh impresso depois
-	if especialNoTerminalUsed > 0:
-		automatonFile.write("0")
-		for terminal in terminals:
-			automatonFile.write("; X")
-		automatonFile.write("\n")
-
 	# Por fim eh imprimido o estado de erro
 	automatonFile.write("X")
 	for terminal in terminals:
@@ -291,6 +257,10 @@ model = file.readlines();
 print "Making Automaton From File"
 makeAutomaton(model)
 file.close();
+
+print "Solving Tokens..."
+for token in tokens:
+	makeTokenTree(token, 0)
 
 print "Determinizing..."
 makeDeterminization(automaton)

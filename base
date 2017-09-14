@@ -1,5 +1,8 @@
-<S> ::= a<B> | a<A> | b<B> | c<D> | se
-<A> ::= a<A> | b<B> | b<C> | senao
+se
+entao
+senao
+<S> ::= a<B> | a<A> | b<B> | c
+<A> ::= a<A> | b<B> | b<C>
 <B> ::= b<B> | b<C> | &
 <C> ::= a<B> | &
 <D> ::= d<E>
