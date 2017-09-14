@@ -15,6 +15,11 @@ class automatonReach(object):
 		self.reachs = reachs
 		self.final = 0
 
+class tokensUsed(object):
+	def __init__(self, letter = "", noTerminalName = ""):
+		self.letter = letter;
+		self.noTerminalName = noTerminalName;
+
 noTerminals = []
 terminals = []
 automaton = []
@@ -22,8 +27,8 @@ finals = []
 especialNoTerminalUsed = 0
 determinizedAutomaton = []
 
-tokenCount = 0
 tokens = []
+tokenCount = 0
 
 reachableNoTerminals = []
 alreadyViewed = []
@@ -32,10 +37,9 @@ livableNoTerminals = []
 noTerminalsReachs = []
 
 def makeAutomaton(model):
-	iteration = 0
 	global especialNoTerminalUsed
 	for line in model:
-		line = line.replace(" ", "").replace("\r", "").replace("\n", "").replace(";", "").split("::=")
+		line = line.replace(" ", "").replace("\r", "").replace("\n", "").split("::=")
 
 		lineAutomaton = line[0]
 		lineArguments = line[1].split("|")
@@ -45,6 +49,7 @@ def makeAutomaton(model):
 			return 0
 
 		automaton.append(AutomatonLine('', [], {}))
+		iteration = len(automaton) - 1
 
 		actualNoTerminal = lineAutomaton[1]
 		noTerminals.append(actualNoTerminal)
@@ -77,9 +82,56 @@ def makeAutomaton(model):
 
 				else:
 					# Is here that build tokens porra!
-					print 'token'
+					makeTokenTree(argument, iteration)
 
 		iteration += 1
+
+def makeTokenTree(argument, localIteration):
+	position = 0
+	length = len(argument)
+	global tokenCount
+
+	for letter in argument:
+		position += 1
+		createToken = 0
+		automatonNoTerminal = 0
+
+		if letter not in terminals:
+			terminals.append(letter)
+
+		if letter not in automaton[localIteration].productions:
+			automaton[localIteration].productions[letter] = []
+
+		if not tokens:
+			createToken = 1
+		else:
+			for token in tokens:
+				createToken = 1
+				if letter == token.letter:
+					createToken = 0
+					automatonNoTerminal = token.noTerminalName
+					break
+
+		if createToken == 1:
+			tokenCount += 1
+
+			tokens.append(tokensUsed(letter, tokenCount))
+			noTerminals.append(tokenCount)
+			automaton[localIteration].productions[letter].append(tokenCount)
+
+			automaton.append(AutomatonLine(tokenCount, [], {}))
+			localIteration = len(automaton) - 1
+			if position == length:
+				finals.append(tokenCount)
+		else:
+			if automatonNoTerminal not in actualAutomatonLine.productions[letter]:
+				automaton[localIteration].productions[letter].append(automatonNoTerminal)
+
+			count = 1
+			for line in automaton:
+				if automatonNoTerminal == line.noTerminalName:
+					localIteration = count
+				count += 1
 
 def agroupNoTerminals(AutomatonLines, determinizedAutomaton):
 	for index in determinizedAutomaton:
