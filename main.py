@@ -247,16 +247,32 @@ def makeAutomatonCsvFile(fileName, automaton):
 		automatonFile.write("; X")
 	automatonFile.write("\n")
 
-## Main
-print "Starting..."
+def commandAnalysis(command, iteration):
+	commandNoTerminal = []
+	for letter in command:
+		if letter in automaton[iteration].productions:
+			commandNoTerminal = automaton[iteration].productions[letter]
+			print commandNoTerminal
+		else:
+			print 'not'
 
-print "Reading File"
-file = open("base", "r");
-model = file.readlines();
+def lexicalAnalysis(commandLines):
+	for commandLine in commandLines:
+		commands = commandLine.replace("\r", "").replace("\n", "").split(" ")
+		for command in commands:
+			commandAnalysis(command, 0)
+
+#####################################
+#############          ##############
+##########      Main      ###########
+#############          ##############
+#####################################
 
 print "Making Automaton From File"
+file = open("automaton", "r")
+model = file.readlines()
 makeAutomaton(model)
-file.close();
+file.close()
 
 print "Solving Tokens..."
 for token in tokens:
@@ -273,3 +289,9 @@ removeDeadStates(automaton)
 
 makeAutomatonCsvFile("final-determinized-automaton.csv", automaton)
 print "Automaton generated and ready!"
+
+print "starting lexical analysis"
+file = open("analyse", "r")
+commandLines = file.readlines()
+lexicalAnalysis(commandLines)
+file.close()
