@@ -15,12 +15,19 @@ class automatonReach(object):
 		self.reachs = reachs
 		self.final = 0
 
+class tokensRecognize(object):
+	def __init__(self, token = "", noTerminalName = ""):
+		self.token = token
+		self.noTerminalName = noTerminalName
+
 noTerminals = []
 terminals = []
 automaton = []
 finals = []
+tokensRecognized = []
 especialNoTerminalUsed = 0
 determinizedAutomaton = []
+
 
 tokens = []
 statesCount = 0
@@ -100,6 +107,7 @@ def makeTokenTree(argument, localIteration):
 		noTerminals.append(str(statesCount))
 		automaton[localIteration].productions[letter].append(str(statesCount))
 		if position == length:
+			tokensRecognized.append(tokensRecognize(argument, str(statesCount)))
 			finals.append(str(statesCount))
 
 		automaton.append(AutomatonLine(str(statesCount), [], {}))
@@ -247,20 +255,43 @@ def makeAutomatonCsvFile(fileName, automaton):
 		automatonFile.write("; X")
 	automatonFile.write("\n")
 
-def commandAnalysis(command, iteration):
-	commandNoTerminal = []
+def getAutomatonElementPosition(automaton, noTerminal):
+	position = 0
+	for line in automaton:
+		if noTerminal == line.noTerminalName:
+			return position
+		position += 1
+
+def commandAnalysis(lineCount, command, iteration):
+	commandNoTerminal = ""
+	count = 0
+	length = len(command)
 	for letter in command:
 		if letter in automaton[iteration].productions:
-			commandNoTerminal = automaton[iteration].productions[letter]
-			print commandNoTerminal
+			commandNoTerminal = automaton[iteration].productions[letter][0]
+			iteration = getAutomatonElementPosition(automaton, commandNoTerminal)
+			count += 1
+			if count == length:
+				if commandNoTerminal in finals:
+					return commandNoTerminal
+				else:
+					print lineCount, ': ', command, ' --> X'
+					return 'X'
 		else:
-			print 'not'
+			print lineCount, ': ', command, ' --> X'
+			return 'X'
 
 def lexicalAnalysis(commandLines):
+	lineCount = 0
+	outputTape = open("outputTape", "wb")
+	outputTape.write("")
 	for commandLine in commandLines:
+		lineCount += 1
 		commands = commandLine.replace("\r", "").replace("\n", "").split(" ")
 		for command in commands:
-			commandAnalysis(command, 0)
+			answer = commandAnalysis(lineCount, command, 0)
+			outputTape.write(answer + " ")
+		outputTape.write("\r\n");
 
 #####################################
 #############          ##############

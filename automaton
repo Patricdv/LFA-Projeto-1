@@ -1,6 +1,12 @@
-se
-entao
-senao
+if
+elif
+else
+while
+do
+int
+var
+str
+char
 <S> ::= a<B> | a<A> | b<B> | c
 <A> ::= a<A> | b<B> | b<C>
 <B> ::= b<B> | b<C> | &
