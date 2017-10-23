@@ -16,9 +16,10 @@ class automatonReach(object):
 		self.final = 0
 
 class tokensRecognize(object):
-	def __init__(self, token = "", noTerminalName = ""):
+	def __init__(self, token = "", noTerminalName = "", positions = []):
 		self.token = token
 		self.noTerminalName = noTerminalName
+		self.positions = []
 
 noTerminals = []
 terminals = []
@@ -27,7 +28,6 @@ finals = []
 tokensRecognized = []
 especialNoTerminalUsed = 0
 determinizedAutomaton = []
-
 
 tokens = []
 statesCount = 0
@@ -113,6 +113,12 @@ def makeTokenTree(argument, localIteration):
 		automaton.append(AutomatonLine(str(statesCount), [], {}))
 		localIteration = len(automaton) - 1
 
+def changeTokenRecognized(noTerminalName, newTerminalName):
+	for tokenRecognized in tokensRecognized:
+		if tokenRecognized.noTerminalName == noTerminalName:
+			tokenRecognized.noTerminalName = newTerminalName
+			return 1
+
 def agroupNoTerminals(AutomatonLines, determinizedAutomaton):
 	for index in determinizedAutomaton:
 		if index.noTerminalName in noTerminals:
@@ -129,6 +135,7 @@ def agroupNoTerminals(AutomatonLines, determinizedAutomaton):
 
 		for element in automaton:
 			if element.noTerminalName in index.composition:
+				changeTokenRecognized(element.noTerminalName, index.noTerminalName)
 				for production in element.productions.keys():
 					if production not in automaton[automatonPosition].productions:
 						automaton[automatonPosition].productions[production] = []
@@ -262,7 +269,12 @@ def getAutomatonElementPosition(automaton, noTerminal):
 			return position
 		position += 1
 
-def commandAnalysis(lineCount, command, iteration):
+def addPositionInTokensRecognized(commandNoTerminal, objectCount):
+	for tokenRecognized in tokensRecognized:
+		if tokenRecognized.noTerminalName == commandNoTerminal:
+			tokenRecognized.positions.append(objectCount)
+
+def commandAnalysis(lineCount, objectCount, command, iteration):
 	commandNoTerminal = ""
 	count = 0
 	length = len(command)
@@ -273,6 +285,7 @@ def commandAnalysis(lineCount, command, iteration):
 			count += 1
 			if count == length:
 				if commandNoTerminal in finals:
+					addPositionInTokensRecognized(commandNoTerminal, objectCount)
 					return commandNoTerminal
 				else:
 					print lineCount, ': ', command, ' --> X'
@@ -283,15 +296,16 @@ def commandAnalysis(lineCount, command, iteration):
 
 def lexicalAnalysis(commandLines):
 	lineCount = 0
+	objectCount = 0
 	outputTape = open("outputTape", "wb")
 	outputTape.write("")
 	for commandLine in commandLines:
 		lineCount += 1
 		commands = commandLine.replace("\r", "").replace("\n", "").split(" ")
 		for command in commands:
-			answer = commandAnalysis(lineCount, command, 0)
+			objectCount += 1
+			answer = commandAnalysis(lineCount, objectCount, command, 0)
 			outputTape.write(answer + " ")
-		outputTape.write("\r\n");
 
 #####################################
 #############          ##############
@@ -326,3 +340,10 @@ file = open("analyse", "r")
 commandLines = file.readlines()
 lexicalAnalysis(commandLines)
 file.close()
+
+for tokenRecognized in tokensRecognized:
+	print tokenRecognized.noTerminalName,
+	print ':',
+	print tokenRecognized.token,
+	print ' -> ',
+	print tokenRecognized.positions
